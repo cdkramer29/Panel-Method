@@ -1,11 +1,12 @@
 import numpy as np
 import math
+import matplotlib.pyplot as plt
 from scipy import integrate, linalg
 
 # Calculate x and y values of airfoil
 # And yes I know its not the best way but it works so shut up
 # Equations from Wikipedia, the free encyclopedia
-def airfoil_coord(c, m, p, t, n):
+def airfoil_coord(c, m, p, t, n, rev):
     xu = []
     xl = []
     yu = []
@@ -32,11 +33,21 @@ def airfoil_coord(c, m, p, t, n):
             xl.append(val + yt * math.sin(theta))
             yl.append(yc - yt * math.cos(theta))
             yCamber.append(yc)
+    if rev:
+        xu.reverse()
+        yu.reverse()
+        x = xu + xl
+        y = yu + yl
+        y = [-1*item for item in y]
+        yCamber = [-1*item for item in yCamber]
+        x.reverse()
+        y.reverse()
+    else:
+        xu.reverse()
+        yu.reverse()
+        x = xu + xl
+        y = yu + yl
 
-    xu.reverse()
-    yu.reverse()
-    x = xu + xl
-    y = yu + yl
     for r in range(len(x)):
         if np.isnan(x[r]):
             x[r] = 0
@@ -59,6 +70,8 @@ def rotate(coords, a):
 
 # Thanks from Aeropython, Carson, and the power of copy and paste for helping me be a lazy engineer
 # Aeropython: https://lorenabarba.com/blog/announcing-aeropython/
+# But seriously, the tutorial at Aeropython helped a lot
+
 class Panel:
     """
     Contains information related to a panel.
@@ -130,6 +143,7 @@ def define_panels(x, y, N = 40):
     """
     x = np.asarray(x)
     y = np.asarray(y)
+
     R = (x.max() - x.min()) / 2.0  # circle radius
     x_center = (x.max() + x.min()) / 2.0  # x-coordinate of circle center
 
@@ -139,20 +153,24 @@ def define_panels(x, y, N = 40):
     x_ends = np.copy(x_circle)  # x-coordinate of panels end-points
     y_ends = np.empty_like(x_ends)  # y-coordinate of panels end-points
 
+    x_ends[0] = x[0]
+
+
     # extend coordinates to consider closed surface
     x, y = np.append(x, x[0]), np.append(y, y[0])
 
     # compute y-coordinate of end-points by projection
     I = 0
-    for i in range(N):
+    for j in range(0, N):
         while I < len(x) - 2:
-            if (x[I] <= x_ends[i] <= x[I + 1]) or (x[I + 1] <= x_ends[i] <= x[I]):
+            if (x[I] <= x_ends[j] <= x[I + 1]) or (x[I + 1] <= x_ends[j] <= x[I]):
                 break
             else:
                 I += 1
-        a = (y[I + 1] - y[I]) / (x[I + 1] - x[I])
-        b = y[I + 1] - a * x[I + 1]
-        y_ends[i] = a * x_ends[i] + b
+        #a = (y[I + 1] - y[I]) / (x[I + 1] - x[I])
+        #b = y[I + 1] - a * x[I + 1]
+        #y_ends[i] = a * x_ends[i] + b
+        y_ends[j] = y[I]
     y_ends[N] = y_ends[0]
 
     # create panels
